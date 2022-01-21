@@ -10,6 +10,23 @@ import pickle
 
 matplotlib.use('TkAgg')
 
+# {6.0: 'GAL STARFORMING NOT BROADLINE',
+#  0.0: 'GAL NO SUBCLASS NOT BROADLINE',
+#  4.0: 'GAL STARBURST NOT BROADLINE',
+#  1.0: 'GAL NO SUBCLASS BROADLINE',
+#  13.0: 'QSO STARBURST BROADLINE',
+#  2.0: 'GAL AGN NOT BROADLINE',
+#  15.0: 'QSO STARFORMING BROADLINE',
+#  9.0: 'QSO NO SUBCLASS BROADLINE',
+#  7.0: 'GAL STARFORMING BROADLINE',
+#  8.0: 'QSO NO SUBCLASS NOT BROADLINE',
+#  11.0: 'QSO AGN BROADLINE',
+#  3.0: 'GAL AGN BROADLINE',
+#  10.0: 'QSO AGN NOT BROADLINE',
+#  5.0: 'GAL STARBURST BROADLINE',
+#  14.0: 'QSO STARFORMING NOT BROADLINE',
+#  12.0: 'QSO STARBURST NOT BROADLINE'}
+
 outliers = [
     [52144, 627, 446],
     [54502, 2658, 164],
@@ -185,66 +202,206 @@ def outliers():
 
     tags = ['test', 'validation']
 
-    for s in selections:
-        dfs = []
-        for t in tags:
-            f = '{}_set_dec.csv'.format(t)
-            dfs.append(pandas.read_csv(f))
-            # _d = df.loc[numpy.logical_or(df['new_label'] == 0, df['new_label'] == 1)]
-            # holder.append(_d[s].to_numpy())
-        dfs = pandas.concat(dfs)
-        dfs['galaxy'] = dfs.new_label < 8
+    bins = dict()
+    bins['logp_marg_corr'] = numpy.linspace(-80, -10, 15)
+    bins['recon_error'] = numpy.linspace(10, 40, 15)
 
-        plt.hist([dfs[s][dfs.galaxy == True], dfs[s][dfs.galaxy == False]], bins=numpy.linspace(-80, -10, 14),
-                 label=['Galaxy', 'QSO'], density=True)
-        plt.legend()
-        plt.yscale('log')
-        plt.xlabel(s)
-        plt.show()
+    dfs = []
+    for t in tags:
+        f = '{}_set_dec.csv'.format(t)
+        dfs.append(pandas.read_csv(f))
+        # _d = df.loc[numpy.logical_or(df['new_label'] == 0, df['new_label'] == 1)]
+        # holder.append(_d[s].to_numpy())
+    dfs = pandas.concat(dfs)
+    print(type(dfs.new_label))
+    dfs['galaxy'] = dfs.new_label // 8 == 0
+    dfs['broadline'] = ((dfs.new_label % 2) == 1)
+    dfs['generic'] = ((dfs.new_label % 8) // 2 == 0)
+    dfs['AGN'] = ((dfs.new_label % 8) // 2 == 1)
+    dfs['starburst'] = ((dfs.new_label % 8) // 2 == 2)
+    dfs['starforming'] = ((dfs.new_label % 8) // 2 == 3)
 
-        fig, ax = plt.subplots(2,1,sharex=True,figsize=(6,6))
-        for i in range(16):
-            _d = dfs.loc[dfs['new_label'] == i]
-            ax[i//8].plot(_d['z'], _d[s], '.', label=i, alpha=1, markersize=4)
+    # #absolultely worst
+    # print("ABSOLUTELY WORST")
+    # _d = dfs.sort_values('logp_marg_corr')
+    # counter=0
+    # for index, row in _d.iterrows():
+    #     # print(row[selection])
+    #     print(row['logp_marg_corr'],row['new_label'])
+    #     print("http://skyserver.sdss.org/dr17/en/tools/quicklook/summary.aspx?plate={}&mjd={}&fiber={}".format(
+    #         int(row['plate']), int(row['MJD']), int(row['fiber'])))
+    #     print("https://www.legacysurvey.org/viewer-desi?ra={}&dec={}&zoom=16".format(
+    #         row['RA'], row['DEC']))
+    #     counter = counter + 1
+    #     if counter==5:
+    #         break
+    #
+    #
+    # _d = dfs.sort_values('recon_error',ascending=False)
+    # counter = 0
+    # for index, row in _d.iterrows():
+    #     # print(row[selection])
+    #     print(row['recon_error'],row['new_label'])
+    #     print("http://skyserver.sdss.org/dr17/en/tools/quicklook/summary.aspx?plate={}&mjd={}&fiber={}".format(
+    #         int(row['plate']), int(row['MJD']), int(row['fiber'])))
+    #     print("https://www.legacysurvey.org/viewer-desi?ra={}&dec={}&zoom=16".format(
+    #         row['RA'], row['DEC']))
+    #     counter = counter + 1
+    #     if counter == 5:
+    #         break
 
-        ax[0].set_ylim((-60,-10))
-        ax[1].set_ylim((-60,-10))
-        ax[0].legend()
-        ax[1].legend()
-        plt.legend()
-        plt.show()
-        plt.legend()
-        wef
+    # Worst Galaxy logp
+    # print("WORST GALAXY LOGP")
+    # _d = dfs.loc[dfs['galaxy']]
+    # _d = _d.sort_values('logp_marg_corr')
+    # counter = 0
+    # for index, row in _d.iterrows():
+    #     # print(row[selection])
+    #     print(row['logp_marg_corr'],row['new_label'])
+    #     print("http://skyserver.sdss.org/dr17/en/tools/quicklook/summary.aspx?plate={}&mjd={}&fiber={}".format(
+    #         int(row['plate']), int(row['MJD']), int(row['fiber'])))
+    #     print("https://www.legacysurvey.org/viewer-desi?ra={}&dec={}&zoom=16".format(
+    #         row['RA'], row['DEC']))
+    #     counter = counter + 1
+    #     if counter == 10:
+    #         break
 
-        dfs.loc[(dfs.new_label >= 8), 'new_label'] = 8
-        labels = numpy.sort(dfs['new_label'].unique())
-        for i in labels:
-            _d = dfs.loc[dfs['new_label'] == i]
-            plt.plot(_d['z'], _d[s], '.', label=i, alpha=1, markersize=4)
-        plt.legend(loc=2)
-        plt.ylim((-45, -20))
-        plt.show()
-        wef
-        if s == 'logp_marg_corr':
-            mi = numpy.min([h.min() for h in holder])
-            b = numpy.linspace(mi, mi + 15, 5)
-            b = numpy.linspace(-40, 25, 25)
-            plt.hist(holder, bins=b, label=tags)
-            plt.xlabel(s)
+    # Worst Galaxy logp
+    # print("WORST GENERIC GALAXY LOGP")
+    # _d = dfs.loc[dfs['galaxy']& dfs['generic']]
+    # _d = _d.sort_values('logp_marg_corr')
+    # counter = 0
+    # for index, row in _d.iterrows():
+    #     # print(row[selection])
+    #     print(row['logp_marg_corr'],row['new_label'])
+    #     print("http://skyserver.sdss.org/dr17/en/tools/quicklook/summary.aspx?plate={}&mjd={}&fiber={}".format(
+    #         int(row['plate']), int(row['MJD']), int(row['fiber'])))
+    #     print("https://www.legacysurvey.org/viewer-desi?ra={}&dec={}&zoom=16".format(
+    #         row['RA'], row['DEC']))
+    #     counter = counter + 1
+    #     if counter == 10:
+    #         break
 
-        elif s == 'recon_error':
-            b = numpy.logspace(1e-5, 0.01, 5)
-            b = numpy.linspace(0.3, 1, 20)
-            # for i in range(len(holder)):
-            #     holder[i]=holder[i]-1
-            plt.hist(holder, bins=b, label=tags)
-            # plt.xscale('log')
-            plt.xlabel(s)
+    # Worst QSO recon error
+    # print("WORST QSO Recon")
+    # _d = dfs.loc[~dfs['galaxy']]
+    # _d = _d.sort_values('recon_error',ascending=False)
+    # counter = 0
+    # for index, row in _d.iterrows():
+    #     # print(row[selection])
+    #     print(row['recon_error'],row['new_label'])
+    #     print("http://skyserver.sdss.org/dr17/en/tools/quicklook/summary.aspx?plate={}&mjd={}&fiber={}".format(
+    #         int(row['plate']), int(row['MJD']), int(row['fiber'])))
+    #     print("https://www.legacysurvey.org/viewer-desi?ra={}&dec={}&zoom=16".format(
+    #         row['RA'], row['DEC']))
+    #     counter = counter + 1
+    #     if counter == 5:
+    #         break
 
-        plt.legend()
-        plt.yscale('log')
-        plt.xlabel(s)
-        plt.show()
+    # Worst galaxy generic recon error
+    # _d = dfs.loc[dfs['galaxy'] & dfs['generic']]
+    # _d = _d.sort_values('recon_error',ascending=False)
+    # counter = 0
+    # for index, row in _d.iterrows():
+    #     # print(row[selection])
+    #     print(row['recon_error'],row['new_label'])
+    #     print("http://skyserver.sdss.org/dr17/en/tools/quicklook/summary.aspx?plate={}&mjd={}&fiber={}".format(
+    #         int(row['plate']), int(row['MJD']), int(row['fiber'])))
+    #     print("https://www.legacysurvey.org/viewer-desi?ra={}&dec={}&zoom=16".format(
+    #         row['RA'], row['DEC']))
+    #     counter = counter + 1
+    #     if counter == 10:
+    #         break
+
+    # GALAXY QSO
+    # for s in selections:
+    #     plt.clf()
+    #     plt.hist([dfs[s][dfs.galaxy == True], dfs[s][dfs.galaxy == False]], bins=bins[s],
+    #              label=['Galaxy', 'QSO'], density=True)
+    #     plt.legend()
+    #     plt.yscale('log')
+    #     plt.xlabel(s)
+    #     plt.show()
+
+    # BROADLINE
+    # for s in selections:
+    #     plt.clf()
+    #     plt.hist([dfs[s][dfs.broadline == True], dfs[s][dfs.broadline == False]], bins=bins[s],
+    #              label=['Broadline', 'Normal'], density=True)
+    #     plt.legend()
+    #     plt.yscale('log')
+    #     plt.xlabel(s)
+    #     plt.show()
+
+    # Galaxy subtypes
+    # for s in selections:
+    #     plt.clf()
+    #     plt.hist([dfs.loc[dfs['generic'] & dfs['galaxy']][s], dfs.loc[dfs['AGN'] & dfs['galaxy']][s], dfs.loc[dfs['starburst'] & dfs['galaxy']][s], dfs.loc[dfs['starforming'] & dfs['galaxy']][s]], bins = bins[s],
+    #                                                                          label = ['generic', 'AGN',
+    #                                                                                   'starburst',
+    #                                                                                   'starforming'], density = True)
+    #     # print(dfs.new_label[numpy.logical_and(dfs.starforming == True, gal)].unique())
+    #     # print(numpy.logical_and(dfs.starforming == True, gal).sum())
+    #     plt.legend()
+    #     plt.yscale('log')
+    #     plt.xlabel(s)
+    #     plt.title('galaxy')
+    #     plt.show()
+
+    plt.plot(dfs['logp_marg_corr'][dfs['galaxy']], dfs['recon_error'][dfs['galaxy']], '.', markersize=4, label='galaxy')
+    plt.plot(dfs['logp_marg_corr'][~dfs['galaxy']], dfs['recon_error'][~dfs['galaxy']], '.', markersize=4, label='QSO')
+    plt.xlim(-50, 25)
+    plt.ylim(0, 40)
+    plt.xlabel('logp_marg_corr')
+    plt.ylabel('recon_error')
+    plt.legend()
+    plt.show()
+    wfe
+
+    # for s in selections:
+    #     fig, ax = plt.subplots(2, 1, sharex=True, figsize=(6, 6))
+    # for i in range(16):
+    #     _d = dfs.loc[dfs['new_label'] == i]
+    # ax[i // 8].plot(_d['z'], _d[s], '.', label=i, alpha=1, markersize=4)
+    #
+    # ax[0].set_ylim((-60, -10))
+    # ax[1].set_ylim((-60, -10))
+    # ax[0].legend()
+    # ax[1].legend()
+    # plt.legend()
+    # plt.show()
+    # plt.legend()
+    # wef
+    #
+    # dfs.loc[(dfs.new_label >= 8), 'new_label'] = 8
+    # labels = numpy.sort(dfs['new_label'].unique())
+    # for i in labels:
+    #     _d = dfs.loc[dfs['new_label'] == i]
+    # plt.plot(_d['z'], _d[s], '.', label=i, alpha=1, markersize=4)
+    # plt.legend(loc=2)
+    # plt.ylim((-45, -20))
+    # plt.show()
+    # wef
+    # if s == 'logp_marg_corr':
+    #     mi = numpy.min([h.min() for h in holder])
+    #     b = numpy.linspace(mi, mi + 15, 5)
+    #     b = numpy.linspace(-40, 25, 25)
+    #     plt.hist(holder, bins=b, label=tags)
+    #     plt.xlabel(s)
+    #
+    # elif s == 'recon_error':
+    #     b = numpy.logspace(1e-5, 0.01, 5)
+    #     b = numpy.linspace(0.3, 1, 20)
+    #     # for i in range(len(holder)):
+    #     #     holder[i]=holder[i]-1
+    #     plt.hist(holder, bins=b, label=tags)
+    #     # plt.xscale('log')
+    #     plt.xlabel(s)
+    #
+    # plt.legend()
+    # plt.yscale('log')
+    # plt.xlabel(s)
+    # plt.show()
 
 
 def quickView(selection='logp_marg_corr'):
